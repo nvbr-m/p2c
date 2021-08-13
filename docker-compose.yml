@@ -1,0 +1,36 @@
+version: '3'
+
+services:
+  db:
+    image: postgres
+    volumes:
+      - ./db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+
+  backend:
+    build: ./p2c_backend
+    command: python3 manage.py runserver 0.0.0.0:8000
+    ports:
+    - "8000:8000"
+    restart: on-failure
+    volumes:
+    - ./p2c_backend:/app
+    - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - db
+
+  frontend:
+    build: ./p2c_frontend
+    command: npm run serve
+    ports:
+    - "8080:8080"
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    volumes:
+    - ./p2c_frontend/src:/app/src
