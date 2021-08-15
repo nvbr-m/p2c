@@ -8,6 +8,5 @@ class CompilerView(APIView):
 
     def post(self, request):
         code = request.data['code']
-        user_input = '123'
-        output = compile_code(code, user_input)
+        output = compile_code(code)
         return Response(output, status=status.HTTP_200_OK)
