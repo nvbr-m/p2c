@@ -26,7 +26,7 @@ def compile_code(code, user_input):
                                       args=(
                                           client, container_name, result_dict, user_input))
     process.start()
-
+    # arg set timeout for process
     process.join(10)
 
     if process.is_alive():
@@ -38,6 +38,7 @@ def compile_code(code, user_input):
     if running_containers:
         running_containers[0].remove(force=True)
 
+    # remove dir even with files
     shutil.rmtree(Path('/app/compiler_volume/' + container_name), ignore_errors=True)
 
     return result_dict
@@ -56,22 +57,26 @@ def create_file(code, container_name):
 
 def runner(client, container_name, result_dict, user_input):
     try:
-        file_path = '/Users/nvbr/2021/p2c/p2c_backend/compiler_volume/' + container_name
+        # this path should be absolute HOST path (not containers)
+        file_path = '/Users/nvbr/2021/p2c/p2c_backend/compiler_volume/' + container_name # TODO get this path from env
         container_file_path = '/home/' + container_name
         compile_container = client.containers.create("gcc:9.4.0-buster",
-                                                     f' /bin/bash -c "gcc {container_file_path}/prog.c -o {container_file_path}/a.out && sleep 100"',
-                                                     name=container_name, detach=True,
+                                                     "sleep 100",
+                                                     name=container_name,
                                                      volumes={file_path: {
                                                          'bind': container_file_path,
                                                          'mode': 'rw'}
                                                      })
         compile_container.start()
-        result_dict['result']=compile_container.exec_run(f"/bin/bash -c 'echo {user_input} | ./a.out'",
-                                   workdir=container_file_path)
+        status = compile_container.exec_run("gcc prog.c",
+                                            workdir=container_file_path)
+        if status[0]:
+            result_dict['result'] = status[1]
+            return
+        result_dict['result'] = compile_container.exec_run(
+            f"/bin/bash -c 'echo {user_input} | ./a.out'",
+            workdir=container_file_path)[1]
 
-    except docker.errors.ContainerError as e:
-        # error_mes = str(e).replace()
-        result_dict['cont'] = str(e)
-
-    except Exception as e:
-        result_dict['132'] = str(e)
+    # delete this later TODO
+    except Exception:
+        result_dict['result'] = "Error. Try later."
