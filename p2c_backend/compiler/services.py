@@ -6,9 +6,8 @@ import docker
 import shutil
 
 
-def compile_code(code, user_input):
+def compile_code(code, user_input='', test_input=[]):
     """This function create docker container and run user code inside it"""
-
     # getting docker client from env vars (same as default docker CLI client)
     client = docker.from_env()
 
@@ -24,7 +23,7 @@ def compile_code(code, user_input):
 
     process = multiprocessing.Process(target=runner,
                                       args=(
-                                          client, container_name, result_dict, user_input))
+                                          client, container_name, result_dict, user_input, test_input))
     process.start()
     # arg set timeout for process
     process.join(10)
@@ -55,10 +54,10 @@ def create_file(code, container_name):
         f.write(code)
 
 
-def runner(client, container_name, result_dict, user_input):
+def runner(client, container_name, result_dict, user_input, test_input):
     try:
         # this path should be absolute HOST path (not containers)
-        file_path = '/Users/nvbr/2021/p2c/p2c_backend/compiler_volume/' + container_name # TODO get this path from env
+        file_path = '/Users/nvbr/2021/p2c/p2c_backend/compiler_volume/' + container_name  # TODO get this path from env
         container_file_path = '/home/' + container_name
         compile_container = client.containers.create("gcc:9.4.0-buster",
                                                      "sleep 100",
@@ -70,13 +69,20 @@ def runner(client, container_name, result_dict, user_input):
         compile_container.start()
         status = compile_container.exec_run("gcc prog.c",
                                             workdir=container_file_path)
+        # status is a tuple. 0 element is exit code, 1 element is result
         if status[0]:
             result_dict['result'] = status[1]
             return
+        if test_input:
+            for test_case in test_input:
+                result_dict[test_case] = compile_container.exec_run(
+                    f"/bin/bash -c 'echo {test_case} | ./a.out'",
+                    workdir=container_file_path)[1]
+            return
         result_dict['result'] = compile_container.exec_run(
-            f"/bin/bash -c 'echo {user_input} | ./a.out'",
+            f"/bin/bash -c 'echo {user_input} | ./a.out {user_input}'",
             workdir=container_file_path)[1]
 
-    # delete this later TODO
+    # TODO delete this later
     except Exception:
         result_dict['result'] = "Error. Try later."
