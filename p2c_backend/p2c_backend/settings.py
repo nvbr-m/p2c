@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'compiler',
-    'rest_framework'
+    'rest_framework',
+    'exercise'
 ]
 
 MIDDLEWARE = [
