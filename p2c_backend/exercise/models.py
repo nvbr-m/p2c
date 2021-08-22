@@ -15,3 +15,6 @@ class TaskTest(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE)
     test_case = models.CharField(max_length=50)
     expected_result = models.CharField(max_length=50)
+
+    def __str__(self):
+        return f'{self.task} {self.test_case}'

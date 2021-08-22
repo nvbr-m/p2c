@@ -1,3 +1,4 @@
+import json
 import multiprocessing
 import os
 import uuid
@@ -10,7 +11,6 @@ def compile_code(code, user_input='', test_input=[]):
     """This function create docker container and run user code inside it"""
     # getting docker client from env vars (same as default docker CLI client)
     client = docker.from_env()
-
     # manager provide a way to share data between processes
     manager = multiprocessing.Manager()
 
@@ -55,34 +55,47 @@ def create_file(code, container_name):
 
 
 def runner(client, container_name, result_dict, user_input, test_input):
-    try:
-        # this path should be absolute HOST path (not containers)
-        file_path = '/Users/nvbr/2021/p2c/p2c_backend/compiler_volume/' + container_name  # TODO get this path from env
-        container_file_path = '/home/' + container_name
-        compile_container = client.containers.create("gcc:9.4.0-buster",
-                                                     "sleep 100",
-                                                     name=container_name,
-                                                     volumes={file_path: {
-                                                         'bind': container_file_path,
-                                                         'mode': 'rw'}
-                                                     })
-        compile_container.start()
-        status = compile_container.exec_run("gcc prog.c",
-                                            workdir=container_file_path)
-        # status is a tuple. 0 element is exit code, 1 element is result
-        if status[0]:
-            result_dict['result'] = status[1]
-            return
-        if test_input:
-            for test_case in test_input:
-                result_dict[test_case] = compile_container.exec_run(
-                    f"/bin/bash -c 'echo {test_case} | ./a.out'",
-                    workdir=container_file_path)[1]
-            return
-        result_dict['result'] = compile_container.exec_run(
-            f"/bin/bash -c 'echo {user_input} | ./a.out {user_input}'",
-            workdir=container_file_path)[1]
+    time_check_command = '/usr/bin/time -f " ,memory:%M, time:%e"'
+    # this path should be absolute HOST path (not containers)
+    file_path = '/Users/nvbr/2021/p2c/p2c_backend/compiler_volume/' + container_name  # TODO get this path from env
+    container_file_path = '/home/' + container_name
+    compile_container = client.containers.create("gcc_container",
+                                                 "sleep 100",
+                                                 name=container_name,
+                                                 volumes={file_path: {
+                                                     'bind': container_file_path,
+                                                     'mode': 'rw'}
+                                                 })
+    compile_container.start()
+    # -lm option to add math lib <math.h>
+    status = compile_container.exec_run("gcc prog.c -lm",
+                                        workdir=container_file_path)
+    # status is a tuple. 0 element is exit code, 1 element is result. If exit code is 0, status[0]==0.
+    if status[0]:
+        result_dict['result'] = status[1]
+        return
+    if test_input:
+        for test_case in test_input:
+            result_dict[test_case] = compile_container.exec_run(
+                f"/bin/bash -c 'echo {test_case} | ./a.out'",
+                workdir=container_file_path)[1]
+        return
+        # result_dict.update(run_prog(compile_container,user_input,container_file_path))
+    result_dict.update(run_prog(compile_container, user_input, container_file_path))
+    # result_dict['time'] = compile_container.exec_run(
+    #     f"/bin/bash -c 'echo {user_input} | {time_check_command} ./a.out'",
+    #     workdir=container_file_path)[1]
 
-    # TODO delete this later
-    except Exception:
-        result_dict['result'] = "Error. Try later."
+
+def run_prog(compile_container, user_input, container_file_path):
+    # bash doesnt support single quotes or quotes inside double quotes so @# = '
+    time_check_command = '/usr/bin/time -f "@# , @#memory@#:@#%M@# , @#time@#:@#%e@#"'
+    result = compile_container.exec_run(
+        f"/bin/bash -c 'echo {user_input} | {time_check_command} ./a.out'",
+        workdir=container_file_path)[1].decode('utf-8')
+    result = '{"result":"' + result + ',}'
+    result = result.replace('@#', '"')
+    result_dict = json.loads(result)
+    if result_dict['time'] == '0.00':
+        result_dict['time'] = '<0.01'
+    return result_dict
