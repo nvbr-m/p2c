@@ -1,4 +1,4 @@
-import json
+import ast
 import multiprocessing
 import os
 import uuid
@@ -81,7 +81,8 @@ def runner(client, container_name, result_dict, user_input, test_input):
                 workdir=container_file_path)[1]
         return
         # result_dict.update(run_prog(compile_container,user_input,container_file_path))
-    result_dict.update(run_prog(compile_container, user_input, container_file_path))
+    # result_dict.update(run_prog(compile_container, user_input, container_file_path))
+    result_dict['here we go']=run_prog(compile_container, user_input, container_file_path)
     # result_dict['time'] = compile_container.exec_run(
     #     f"/bin/bash -c 'echo {user_input} | {time_check_command} ./a.out'",
     #     workdir=container_file_path)[1]
@@ -89,13 +90,30 @@ def runner(client, container_name, result_dict, user_input, test_input):
 
 def run_prog(compile_container, user_input, container_file_path):
     # bash doesnt support single quotes or quotes inside double quotes so @# = '
-    time_check_command = '/usr/bin/time -f "@# , @#memory@#:@#%M@# , @#time@#:@#%e@#"'
-    result = compile_container.exec_run(
-        f"/bin/bash -c 'echo {user_input} | {time_check_command} ./a.out'",
+    time_check_command = '/usr/bin/time -f "@#memory@#:@#%M@#, @#time@#:@#%e@#"'
+    time_check_command = '/usr/bin/time -f "{@#memory@#:@#%M@#, @#time@#:@#%e@#}"'
+    # not always work correctly, most of times a.out output before time output, but sometimes they switch
+    #TODO find a way to run this ONE time like this
+    # result = compile_container.exec_run(
+    #     f"/bin/bash -c 'echo {user_input} | {time_check_command} ./a.out '",
+    #     workdir=container_file_path)[1].decode('utf-8')
+    # result = '{"result":"' + result + '}'
+    # result = result.replace('@#', '"')
+    # result = result.replace('\n', '')
+    # result_dict = ast.literal_eval(result)
+    # if result_dict['time'] == '0.00':
+    #     result_dict["time"] = "<0.01"
+    # return result_dict
+
+    time = compile_container.exec_run(
+        f"/bin/bash -c 'echo {user_input} | {time_check_command} ./a.out 1> /dev/null'",
         workdir=container_file_path)[1].decode('utf-8')
-    result = '{"result":"' + result + ',}'
-    result = result.replace('@#', '"')
-    result_dict = json.loads(result)
-    if result_dict['time'] == '0.00':
-        result_dict['time'] = '<0.01'
+    time = time.replace('@#', '"')
+    result_dict = ast.literal_eval(time)
+    result = compile_container.exec_run(
+        f"/bin/bash -c 'echo {user_input} | {time_check_command} ./a.out 2> /dev/null'",
+        workdir=container_file_path)[1].decode('utf-8')
+    result_dict['result'] = result
+    if result_dict['time'] == "0.00":
+        result_dict["time"] = "<0.01"
     return result_dict
