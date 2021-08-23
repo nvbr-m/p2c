@@ -6,14 +6,16 @@ from pathlib import Path
 import docker
 import shutil
 
-
+# path to 'compiler_volume' inside container
+COMPILER_VOLUME = os.environ.get("COMPILER_VOLUME")
+# path to 'compiler_volume' on host, should be absolute on MacOS
+HOST_ABS_COMPILER_VOLUME = os.environ.get("HOST_ABS_COMPILER_VOLUME")
 def compile_code(code, user_input='', test_input=[]):
     """This function create docker container and run user code inside it"""
     # getting docker client from env vars (same as default docker CLI client)
     client = docker.from_env()
     # manager provide a way to share data between processes
     manager = multiprocessing.Manager()
-
     # this dict collect results of processes
     result_dict = manager.dict()
 
@@ -38,7 +40,7 @@ def compile_code(code, user_input='', test_input=[]):
         running_containers[0].remove(force=True)
 
     # remove dir even with files
-    shutil.rmtree(Path('/app/compiler_volume/' + container_name), ignore_errors=True)
+    shutil.rmtree(Path(COMPILER_VOLUME + container_name), ignore_errors=True)
 
     return result_dict
 
@@ -48,16 +50,15 @@ def get_container_name():
 
 
 def create_file(code, container_name):
-    os.mkdir('/app/compiler_volume/' + container_name)
-    file_path = Path('/app/compiler_volume/' + container_name + '/prog.c')
+    os.mkdir(COMPILER_VOLUME + container_name)
+    file_path = Path(COMPILER_VOLUME + container_name + '/prog.c')
     with file_path.open("w") as f:
         f.write(code)
 
 
 def runner(client, container_name, result_dict, user_input, test_input):
-    time_check_command = '/usr/bin/time -f " ,memory:%M, time:%e"'
     # this path should be absolute HOST path (not containers)
-    file_path = '/Users/nvbr/2021/p2c/p2c_backend/compiler_volume/' + container_name  # TODO get this path from env
+    file_path = HOST_ABS_COMPILER_VOLUME + container_name  # TODO get this path from env
     container_file_path = '/home/' + container_name
     compile_container = client.containers.create("gcc_container",
                                                  "sleep 100",
@@ -81,8 +82,8 @@ def runner(client, container_name, result_dict, user_input, test_input):
                 workdir=container_file_path)[1]
         return
         # result_dict.update(run_prog(compile_container,user_input,container_file_path))
-    # result_dict.update(run_prog(compile_container, user_input, container_file_path))
-    result_dict['here we go']=run_prog(compile_container, user_input, container_file_path)
+    result_dict.update(run_prog(compile_container, user_input, container_file_path))
+    # result_dict['here we go'] = run_prog(compile_container, user_input, container_file_path)
     # result_dict['time'] = compile_container.exec_run(
     #     f"/bin/bash -c 'echo {user_input} | {time_check_command} ./a.out'",
     #     workdir=container_file_path)[1]
@@ -90,10 +91,10 @@ def runner(client, container_name, result_dict, user_input, test_input):
 
 def run_prog(compile_container, user_input, container_file_path):
     # bash doesnt support single quotes or quotes inside double quotes so @# = '
-    time_check_command = '/usr/bin/time -f "@#memory@#:@#%M@#, @#time@#:@#%e@#"'
+    # time_check_command = '/usr/bin/time -f "@#memory@#:@#%M@#, @#time@#:@#%e@#"'
     time_check_command = '/usr/bin/time -f "{@#memory@#:@#%M@#, @#time@#:@#%e@#}"'
     # not always work correctly, most of times a.out output before time output, but sometimes they switch
-    #TODO find a way to run this ONE time like this
+    # TODO find a way to run this ONE time like this
     # result = compile_container.exec_run(
     #     f"/bin/bash -c 'echo {user_input} | {time_check_command} ./a.out '",
     #     workdir=container_file_path)[1].decode('utf-8')

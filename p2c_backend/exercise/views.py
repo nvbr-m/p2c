@@ -21,12 +21,12 @@ class TaskDetail(APIView):
         except Task.DoesNotExist:
             raise Http404
 
-    def get(self, request, pk, format=None):
+    def get(self, request, pk):
         task = self.get_object(pk)
         serializer = TaskDetailSerializer(task)
         return Response(serializer.data)
 
-    def post(self, request, pk, format=None):
+    def post(self, request, pk):
         code = request.data["code"]
         test_input = self.get_test(pk)
         expected_result = self.get_expected_results(pk)
@@ -48,7 +48,7 @@ class TaskDetail(APIView):
             if value == expect:
                 passed += 1
         if passed == len(expected_result):
-            res = "All tests Passed!"
+            res = "All Tests Passed!"
         else:
-            res = f"{len(expected_result) - passed} tests Failed!"
+            res = f"{len(expected_result) - passed} Tests Failed!"
         return {'result': f'{res}', 'passed': passed, 'total': len(expected_result)}
