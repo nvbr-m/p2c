@@ -6,3 +6,4 @@ psycopg2-binary >= 2.8
 djangorestframework==3.12.4
 docker
 six
+django-cors-headers

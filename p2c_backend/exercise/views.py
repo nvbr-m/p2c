@@ -9,7 +9,7 @@ from exercise.models import Task, TaskTest
 
 
 class TaskList(ListAPIView):
-    queryset = Task.objects.all()
+    queryset = Task.objects.all().order_by('id')
     serializer_class = TaskSerializer
 
 

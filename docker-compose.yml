@@ -23,6 +23,10 @@ services:
       - ./.env.dev
     depends_on:
       - db
+    networks:
+      default:
+        aliases:
+          - backend
 
   frontend:
     build: ./p2c_frontend
@@ -34,3 +38,7 @@ services:
     tty: true
     volumes:
     - ./p2c_frontend/src:/app/src
+    networks:
+      default:
+        aliases:
+          - frontend
