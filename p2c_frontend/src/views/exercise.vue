@@ -7,8 +7,8 @@
           outlined
           tile
         >
-          <v-card-title > Hello, World!</v-card-title>
-          <v-card-text class="task">Выведите в консоль строку "Hello, World!"</v-card-text>
+          <v-card-title > {{task.title}}</v-card-title>
+          <v-card-text class="task">{{task.instruction}}</v-card-text>
         </v-card>
       </v-col>
     </v-row>
@@ -19,9 +19,11 @@
           outlined
           tile
         >
+        Pascal
           <prism-editor
       class="my-editor"
-      v-model="form.pascal"
+      readonly=True
+      v-model="task.pascal_code"
       :highlight="highlighter_p"
       :line-numbers=lineNubers
     ></prism-editor>
@@ -33,6 +35,7 @@
           outlined
           tile
         >
+        C
           <prism-editor
       class="my-editor"
       v-model="form.code"
@@ -45,25 +48,15 @@
 
       <v-spacer></v-spacer>
     <v-row class="pa-4" align="right" justify="space-around" >
-        <v-icon large> mdi-clock </v-icon>
-        <div class="pa-2 icons" style="color:white; font-weight: 600;">0.0 с</div>
-        <v-icon large> mdi-view-stream </v-icon>
-        <div class="pa-2" style="color:white; font-weight: 600;">1376 kb</div>
-        <v-icon large> mdi-check-circle</v-icon>
-        <div class="pa-2" style="color:white; font-weight: 600;">1/1 </div>
-        <v-btn
-      depressed
-      elevation="0"
-      flat
-      class="secondary"
-      text
-      >Пропустить
-</v-btn>
+        <v-icon large color=''> mdi-check-circle</v-icon>
+        <div v-if="output.total" class="pa-2" style="color:white;
+        font-weight: 600;">{{output.result}} {{output.passed}}/{{output.total}} </div>
         <v-btn
       depressed
       elevation="0"
       class="primary"
       text
+      v-on:click="getOutput"
       >отправить
 </v-btn>
     </v-row>
@@ -79,7 +72,15 @@ import { highlight, languages } from 'prismjs/components/prism-core';
 import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-c';
 import 'prismjs/components/prism-pascal';
-import 'prismjs/themes/prism.css';
+import 'prismjs/themes/prism-tomorrow.css';
+
+const defualtCode = `#include <stdio.h>
+
+int main (void)
+{
+
+  return 0;
+}`;
 
 export default {
   name: 'Exercise',
@@ -88,23 +89,36 @@ export default {
   },
   data: () => ({
     form: {
-      chk: '1',
-      code: '123',
-      inp: null,
-      pascal: '',
+      code: defualtCode,
     },
-    output: '',
+    task: [],
+    output: {
+      total: '',
+      resul: '',
+    },
     lineNubers: true,
-    id: 0,
   }),
-  created: () => {
-    console.log(this.$route.params.id);
+  created() {
+    this.getDetail();
+  },
+  watch: {
+    $route: 'getDetail',
   },
   methods: {
     getOutput() {
-      axios.post('http://localhost:8000/wow/', this.form)
+      axios.post(`http://127.0.0.1:8000/api/tasks/${this.$route.params.id}/`, this.form)
         .then((response) => {
           this.output = response.data;
+        });
+    },
+    getDetail() {
+      axios.get(`http://127.0.0.1:8000/api/tasks/${this.$route.params.id}`)
+        .then((response) => {
+          this.task = response.data;
+          this.output = {
+            total: '',
+            resul: '',
+          };
         });
     },
     highlighter(code) {
@@ -126,7 +140,7 @@ export default {
 }
 .my-editor {
   background: #2d2d2d;
-  color: rgb(0, 0, 0);
+  color: rgb(224, 224, 224);
 
   font-family: Fira code, Fira Mono, Consolas, Menlo, Courier, monospace;
   font-size: 14px;
@@ -135,6 +149,12 @@ export default {
   height: 500px;
   min-width: 300px;
   display: flex;
+  decoration: none;
 
+}
+
+:active, :hover, :focus {
+    outline: 0;
+    outline-offset: 0;
 }
 </style>

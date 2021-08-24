@@ -1,28 +1,18 @@
 <template>
-<v-container fluid class="primary">
-    <v-row>
-      <v-col>
-        <v-card
-          class="pa-2 mb-2 "
-          outlined
-          tile
-        >
-          <v-card-title>Hello, World!</v-card-title>
-          <v-card-text >Выведите в консоль фразу "Hello, World!2"</v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-    <v-row>
+<v-container fluid class="secondary">
+    <v-row class="pt-8">
       <v-col
       >
         <v-card
           outlined
           tile
         >
+          Code
           <prism-editor
       class="my-editor"
       :highlight="highlighter"
       :line-numbers=lineNubers
+      v-model="form.code"
     ></prism-editor>
         </v-card>
       </v-col>
@@ -32,16 +22,26 @@
           outlined
           tile
         >
+          Output
           <prism-editor
       class="my-editor"
-      v-model="form.code"
+      readonly=True
       :highlight="highlighter"
-      :line-numbers=lineNubers
+      v-model="output.result"
     ></prism-editor>
         </v-card>
       </v-col>
     </v-row>
-
+      <v-spacer></v-spacer>
+      <v-row>
+        <v-textarea class="pa-4"
+          filled
+          label="Input"
+          rows="4"
+          no-resize
+          v-model="form.input"
+          row-height="30"></v-textarea>
+      </v-row>
       <v-spacer></v-spacer>
     <v-row class="pa-4" align="right" justify="space-around" >
         <v-icon large> mdi-clock </v-icon>
@@ -53,16 +53,9 @@
         <v-btn
       depressed
       elevation="0"
-      flat
-      class="secondary"
-      text
-      >Пропустить
-</v-btn>
-        <v-btn
-      depressed
-      elevation="0"
       class="primary"
       text
+      v-on:click="getOutput"
       >отправить
 </v-btn>
     </v-row>
@@ -78,6 +71,14 @@ import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-c';
 import 'prismjs/themes/prism-tomorrow.css';
 
+const defualtCode = `#include <stdio.h>
+
+int main (void)
+{
+  printf("Hello World");
+  return 0;
+}`;
+
 export default {
   name: 'Compiler',
   components: {
@@ -85,16 +86,19 @@ export default {
   },
   data: () => ({
     form: {
-      chk: '1',
-      code: '123',
-      inp: null,
+      code: defualtCode,
+      input: '',
     },
-    output: '',
+    output: {
+      memory: '0.00',
+      time: '0.00',
+      result: '',
+    },
     lineNubers: true,
   }),
   methods: {
     getOutput() {
-      axios.post('http://localhost:8000/wow/', this.form)
+      axios.post('http://localhost:8000/api/compiler/', this.form)
         .then((response) => {
           this.output = response.data;
         });
@@ -116,7 +120,7 @@ export default {
   font-size: 14px;
   line-height: 1.5;
   padding: 5px;
-  height: 500px;
+  height: 600px;
   min-width: 300px;
   display: flex;
 

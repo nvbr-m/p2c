@@ -23,7 +23,7 @@
         <v-app-bar-nav-icon  @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
         <v-spacer></v-spacer>
       <v-tabs   right>
-        <v-tab to="/"><b>Exercise</b></v-tab>
+        <v-tab to="/1"><b>Exercise</b></v-tab>
         <v-tab to="/compiler"><b>Compiler</b></v-tab>
       </v-tabs>
       </v-app-bar>
