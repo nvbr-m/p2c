@@ -24,16 +24,16 @@ Build docker-compose and run:
 
 `docker-compose up --build`
 
-## 
-##Screenshots
-####Compiler mode:
+## Screenshots
 
-[Alt text](/readme/compiler_screen.png?raw=true)
+#### Compiler mode:
 
-####Error:
+![compiler](/readme/compiler_screen.png?raw=true)
 
-[Alt text](/readme/compiler_error_screen.png?raw=true)
+#### Error:
 
-####Exercise:
+![error](/readme/compiler_error_screen.png?raw=true)
 
-[Alt text](/readme/compiler_exercise.png?raw=true)
+#### Exercise:
+
+![exercise](/readme/exercise_screen.png?raw=true)
