@@ -45,11 +45,9 @@
       <v-spacer></v-spacer>
     <v-row class="pa-4" align="right" justify="space-around" >
         <v-icon large> mdi-clock </v-icon>
-        <div class="pa-2" style="color:white;">0.0 с</div>
+        <div class="pa-2" style="color:white;">{{output.time}} s</div>
         <v-icon large> mdi-view-stream </v-icon>
-        <div class="pa-2" style="color:white;">0.0 с</div>
-        <v-icon large> mdi-check-circle</v-icon>
-        <div class="pa-2" style="color:white;">0.0 с</div>
+        <div class="pa-2" style="color:white;">{{output.memory}} kb</div>
         <v-btn
       depressed
       elevation="0"
