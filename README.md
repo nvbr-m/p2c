@@ -28,12 +28,12 @@ Build docker-compose and run:
 ##Screenshots
 ####Compiler mode:
 
-[Alt text](/readme/compiler_screen.png)
+[Alt text](/readme/compiler_screen.png?raw=true)
 
 ####Error:
 
-[Alt text](/readme/compiler_error_screen.png)
+[Alt text](/readme/compiler_error_screen.png?raw=true)
 
 ####Exercise:
 
-[Alt text](/readme/compiler_exercise.png)
+[Alt text](/readme/compiler_exercise.png?raw=true)
